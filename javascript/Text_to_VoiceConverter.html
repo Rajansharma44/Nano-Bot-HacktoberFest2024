@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport"content="width=device-width,initial-scale=1.0"/>
+<title>labbo</title>
+<style>
+*{
+   margin: 0;
+   padding: 0;     
+   box-sizing: border-box;  }
+body{
+   background:linear-gradient(27deg,#4e115c,#0f3174);
+   background-repeat: no-repeat; 
+       min-height: 100vh;
+   }
+    .container{
+   margin:80px auto 170px;
+   display: flex;
+   background-color: #f4f0f575;
+   padding: 4vh;
+   height: 48vh;
+   width: 20rem;
+   padding-top: 5vh;
+   flex-direction: column;
+   flex-wrap: column;
+   max-width:740px ;
+   backdrop-filter:blur(50px);
+   border-radius: 20px;
+    }
+#textarea{
+   height: 37vh;
+   width:270px; 
+   margin-bottom: 8px;   
+   max-width:700px ;
+   margin-top:8px;
+   background-color:#d0dcfb;   }
+#row{
+   width:275px; }
+   #voice{
+   float: right;
+   height:35px;
+   position:relative;
+   border-radius: 25px;
+   border:none;
+   width:80px; 
+   background-color: ghostwhite;
+   }
+#tyvoice{
+   width:150px;
+   height:35px;
+   border-radius: 25px;
+   border:none;
+   right: 5vh;  
+   width:180px; 
+   background-color: ghostwhite;
+    }
+#h{
+    align-items :center;
+    padding-left:8px;
+    color:white;
+    }
+@media (min-width:768px) and (max-width:1280px) {
+    *{
+      box-sizing: unset;
+}}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2 id="h">Text to Voice Converter</h2>
+  <textarea id="textarea" type="text-area"  ></textarea>
+  <div id="row">         
+     <select  id="tyvoice"></select>
+     <button value="voice" id="voice">Hear</button>
+  </div>     
+</div>
+<script >
+let speech= new SpeechSynthesisUtterance();
+let voices = [];
+let voicesel = document.querySelector("#tyvoice");
+  window.speechSynthesis.onvoiceschanged = () =>{
+  voices = window.speechSynthesis.getVoices();
+  voicesel.innerHTML = "";
+  voices.forEach((voice,i) => {
+      let option = document.createElement('option');
+      option.value = i;
+      option.textContent = `${voice.name}(${voice.lang})`;
+      voicesel.appendChild(option);
+  });
+};
+  document.querySelector("#voice").addEventListener("click",() => {
+      speech.text = document.querySelector("#textarea").value;
+      let selectedVoice = voices[voicesel.value];
+      speech.voice = selectedVoice;
+      window.speechSynthesis.speak(speech);
+ });   
+</script>
+</body>
+</html>
