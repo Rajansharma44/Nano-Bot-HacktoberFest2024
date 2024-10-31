@@ -43,23 +43,6 @@ It's super easy! You don't need to be a coding expert. Just follow these steps t
 
 > Feel free to upload your coded projects in the **Codes Directory**! 📁
 
----
-
-## 📜 Code of Conduct
-
-**Examples of positive behavior:**
-- Using welcoming and inclusive language 🤗
-- Accepting constructive criticism gracefully ✨
-- Focusing on what is best for the community 💖
-- Respecting differing viewpoints and experiences 🌈
-
-**Examples of unacceptable behavior:**
-- Trolling, insulting/derogatory comments, or personal attacks 🚫
-- Public or private harassment 🔒
-- Publishing others' private information without explicit permission 🚷
-
----
-
 ## 🎯 Objectives
 
 The main goal of this repository is to assist individuals in making their contributions during Hacktoberfest 2024. Together, let's make open source accessible and enjoyable for everyone! 🙌
