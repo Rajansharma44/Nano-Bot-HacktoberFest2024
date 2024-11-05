@@ -4,43 +4,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Canvas Game</title>
+  <title>Rotating Circular Canvas Game</title>
   <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: radial-gradient(circle, #1f1c2c, #928dab);
+      font-family: 'Arial', sans-serif;
+    }
+
     canvas {
-      background-color: #000;
+      background-color: #2c2c54;
+      border: 2px solid #ffffff;
+      border-radius: 50%; /* Making the canvas appear circular */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
     #add-ball {
       position: absolute;
       top: 10px;
       right: 10px;
-      background-color: #0f0;
-      padding: 10px;  
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #add-ball:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 
 <body>
   <canvas id="gameCanvas" width="800" height="800"></canvas>
-  <div id="add-ball">Add Ball</div>
+  <button id="add-ball">Add Ball</button>
   <script>
     const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d'); // createCircle, createRectangle, createTriangle, createLine
+    const ctx = canvas.getContext('2d');
 
     const DECIMAL_MULTIPLIER = 10000;
-
     const WIDTH = 800;
     const HEIGHT = 800;
     const ballRadius = 7;
-    const obstacleRadius = 4;
-    const gravity = pad(0.2);
+    const obstacleRadius = 6;
+    const gravity = 0.2;
     const horizontalFriction = 0.4;
     const verticalFriction = 0.8;
+    const maxRadius = WIDTH / 2 - 50; // Maximum radius for obstacles
     let balls = [];
-
     const obstacles = [];
     const sinks = [];
+    let rotationAngle = 0; // Angle for rotation
 
     function pad(n) {
       return n * DECIMAL_MULTIPLIER;
@@ -50,38 +71,33 @@
       return Math.floor(n / DECIMAL_MULTIPLIER);
     }
 
-    // Create obstacles in a pyramid shape
-    const rows = 16;
-    for (let row = 2; row < rows; row++) {
-      const numObstacles = row + 1;// 3
-      const y = 0 + row * 35;
-      const spacing = 36;
-      for (let col = 0; col < numObstacles; col++) {
-        const x = WIDTH / 2 - spacing * (row / 2 - col);
-        obstacles.push({ x: pad(x), y: pad(y), radius: obstacleRadius });
+    // Create circular obstacles in radial pattern
+    const obstacleRings = 6;
+    for (let ring = 1; ring <= obstacleRings; ring++) {
+      const radius = (ring * maxRadius) / obstacleRings;
+      const numObstacles = ring * 6;
+      for (let i = 0; i < numObstacles; i++) {
+        const angle = (i / numObstacles) * Math.PI * 2;
+        const x = WIDTH / 2 + Math.cos(angle) * radius;
+        const y = HEIGHT / 2 + Math.sin(angle) * radius;
+        obstacles.push({ x: pad(x), y: pad(y), radius: obstacleRadius, baseAngle: angle, radiusFromCenter: radius });
       }
     }
 
-    // Create sinks at the bottom as rectangles
-    const sinkWidth = 36;
-    const NUM_SINKS = 15
-    for (let i = 0; i < NUM_SINKS; i++) {
-      const x = WIDTH / 2 + (i - 7.5) * (sinkWidth) + obstacleRadius;
-      const y = HEIGHT - 240;
-      const width = sinkWidth;
-      const height = width;
-      sinks.push({ x, y, width, height });
+    // Create sinks around the outer edge in a circular pattern
+    const numSinks = 20;
+    const sinkRadius = 16;
+    for (let i = 0; i < numSinks; i++) {
+      const angle = (i / numSinks) * Math.PI * 2;
+      const x = WIDTH / 2 + Math.cos(angle) * (maxRadius + 20);
+      const y = HEIGHT / 2 + Math.sin(angle) * (maxRadius + 20);
+      sinks.push({ x, y, width: sinkRadius, height: sinkRadius });
     }
-
-
-
-
-
 
     class Ball {
       constructor(x, y, radius, color) {
-        this.x = x;
-        this.y = y;
+        this.x = pad(x);
+        this.y = pad(y);
         this.radius = radius;
         this.color = color;
         this.vx = 0;
@@ -95,38 +111,29 @@
         ctx.fill();
         ctx.closePath();
       }
-      
+
       update() {
-        // change the velocity, change the positions
-        this.vy = this.vy + gravity;
-        this.x += this.vx; // x = x1 + v
+        this.vy = this.vy + pad(gravity);
+        this.x += this.vx;
         this.y += this.vy;
 
-        // Collision with obstacles
         obstacles.forEach(obstacle => {
           const dist = Math.hypot(this.x - obstacle.x, this.y - obstacle.y);
           if (dist < pad(this.radius + obstacle.radius)) {
-            // Calculate collision angle
             const angle = Math.atan2(this.y - obstacle.y, this.x - obstacle.x);
-            // Reflect velocity
             const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
             this.vx = (Math.cos(angle) * speed * horizontalFriction);
             this.vy = Math.sin(angle) * speed * verticalFriction;
 
-            // Adjust position to prevent sticking
             const overlap = this.radius + obstacle.radius - unpad(dist);
             this.x += pad(Math.cos(angle) * overlap);
             this.y += pad(Math.sin(angle) * overlap);
           }
         });
 
-        // Collision with sinks
         sinks.forEach(sink => {
-          if (
-            unpad(this.x) > sink.x - sink.width / 2 &&
-            unpad(this.x) < sink.x + sink.width / 2 &&
-            unpad(this.y) + this.radius > sink.y - sink.height / 2
-          ) {
+          const distToSink = Math.hypot(unpad(this.x) - sink.x, unpad(this.y) - sink.y);
+          if (distToSink < this.radius + sink.width / 2) {
             this.vx = 0;
             this.vy = 0;
           }
@@ -134,32 +141,37 @@
       }
     }
 
-
-
-
-    const initialBall = new Ball(pad(WIDTH / 2 + 23), pad(50), ballRadius, 'red');
+    const initialBall = new Ball(WIDTH / 2, HEIGHT / 2 - 100, ballRadius, 'red');
     balls.push(initialBall);
 
     function drawObstacles() {
-      ctx.fillStyle = 'white';
+      ctx.fillStyle = '#fff';
       obstacles.forEach(obstacle => {
+        const x = WIDTH / 2 + Math.cos(obstacle.baseAngle + rotationAngle) * obstacle.radiusFromCenter;
+        const y = HEIGHT / 2 + Math.sin(obstacle.baseAngle + rotationAngle) * obstacle.radiusFromCenter;
         ctx.beginPath();
-        ctx.arc(unpad(obstacle.x), unpad(obstacle.y), obstacle.radius, 0, Math.PI * 2);
+        ctx.arc(x, y, obstacle.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+
+        // Update the obstacle position based on rotation for collision detection
+        obstacle.x = pad(x);
+        obstacle.y = pad(y);
+      });
+    }
+
+    function drawSinks() {
+      ctx.fillStyle = '#4CAF50';
+      sinks.forEach(sink => {
+        ctx.beginPath();
+        ctx.arc(sink.x, sink.y, sink.width / 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
       });
     }
 
-    function drawSinks() {
-      ctx.fillStyle = 'green';
-      for (let i = 0; i<sinks.length; i++)  {
-        const sink = sinks[i];
-        ctx.fillRect(sink.x, sink.y - sink.height / 2, sink.width - obstacleRadius * 2, sink.height);
-      };
-    }
-
     function addBall() {
-      const newBall = new Ball(pad(WIDTH / 2 + 13), pad(50), ballRadius, 'red');
+      const newBall = new Ball(WIDTH / 2, HEIGHT / 2 - 100, ballRadius, 'red');
       balls.push(newBall);
     }
 
@@ -177,6 +189,7 @@
 
     function update() {
       draw();
+      rotationAngle += 0.01; // Rotate obstacles slowly over time
       requestAnimationFrame(update);
     }
 
